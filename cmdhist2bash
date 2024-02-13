@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+"""
+create a bash history log from a cmdhist log
+note: writes completion time, rather than start, unlike bash
+"""
+__url__     = 'https://github.com/smemsh/utilmisc/'
+__author__  = 'Scott Mcdermott <scott@smemsh.net>'
+__license__ = 'GPL-2.0'
+
+import argparse
+
+from sys import argv, stderr, exit
+from time import strptime, mktime
+from os.path import basename, isfile, exists
+
+from os import (
+    getenv, access, R_OK,
+    EX_OK as EXIT_SUCCESS,
+    EX_SOFTWARE as EXIT_FAILURE,
+)
+
+###
+
+def err(*args, **kwargs):
+    print(*args, file=stderr, **kwargs)
+
+def bomb(*args, **kwargs):
+    err(*args, **kwargs)
+    exit(EXIT_FAILURE)
+
+###
+
+def process_args():
+
+    global args
+
+    p = argparse.ArgumentParser(
+        prog            = invname,
+        description     = __doc__.strip(),
+        allow_abbrev    = False,
+        formatter_class = argparse.RawTextHelpFormatter,
+    )
+    p.add_argument('infile', help="cmdhist format input file")
+    p.add_argument('outfile', help="output file to write bash format")
+    args = p.parse_args(args)
+
+    if not (args.infile and args.outfile):
+        p.print_help()
+
+    return args.infile, args.outfile
+
+
+def check_sanity(infile, outfile):
+
+    if not exists(infile) \
+       or not isfile(infile) \
+       or not access(infile, R_OK):
+        bomb("infile must exist, be a regular file, and readable")
+
+    if exists(outfile):
+        bomb("outfile must not already exist")
+
+###
+
+def cmdhist2bash(infile, outfile):
+
+    loops = 0
+
+    fin = open(infile)
+    try: fout = open(outfile, 'xt')
+    except: bomb("problem opening outfile")
+
+    while True:
+
+        values = fin.readline().split(maxsplit=6)
+        if not values: break
+        else: loops += 1
+
+        try: host, htime, ttytype, ttynum, shlvl, retcode, cmd = values
+        except ValueError:
+            err(f"wrong field count, ignoring line {loops}")
+            continue
+
+        fmtvar = 'HISTTIMEFORMAT'
+        timefmt = getenv(fmtvar) or bomb(f"must set ${fmtvar}")
+        timettime = int(mktime(strptime(htime, timefmt.strip())))
+
+        fout.write(f"#{timettime}\n{cmd}")
+
+    print(f"completed after {loops} loops")
+
+###
+
+def main():
+
+    if debug == 1: breakpoint()
+
+    infile, outfile = process_args()
+    check_sanity(infile, outfile)
+
+    try: subprogram = globals()[invname]
+    except (KeyError, TypeError):
+        bomb(f"unimplemented command '{invname}'")
+
+    return subprogram(infile, outfile)
+
+###
+
+if __name__ == "__main__":
+
+    from sys import hexversion
+    if hexversion < 0x03090000:
+        bomb("minimum python 3.9")
+
+    from bdb import BdbQuit
+    debug = int(getenv('DEBUG') or 0)
+    if debug:
+        from pprint import pp
+        err('debug: enabled')
+
+    invname = basename(argv[0])
+    args = argv[1:]
+
+    try: main()
+    except BdbQuit: bomb("debug: stop")
+
+    exit(EXIT_SUCCESS)
