@@ -6,15 +6,16 @@
 # https://github.com/smemsh/utilmisc/
 # https://spdx.org/licenses/GPL-2.0
 
-for label in `find /sys/devices/pci* -name 'temp*_label'`
-do grep -H . $label ${label/_label/_input}
-done |
-awk -F /hwmon/ '{print $2}' |
-awk -F / '{print $1, $2}' |
-sed $'s,_.*:,\x20,' |
-sed $'s,\x20,/,' |
-sed $'s,\x20,/,' |
-sed -r 's,.*/([[:digit:]]+)$,\1,' |
-sed $'s,\x20,,' |
-paste -sd $'\x20\n' |
-column -t
+# old way, stopped working, needs debug
+#for label in `find /sys/devices/pci* -name 'temp*_label'`
+#do grep -H . $label ${label/_label/_input}
+#done |
+#awk -F /hwmon/ '{print $2}' |
+#awk -F / '{print $1, $2}' |
+#sed $'s,_.*:,\x20,' |
+#sed $'s,\x20,/,' |
+#sed $'s,\x20,/,' |
+#sed -r 's,.*/([[:digit:]]+)$,\1,' |
+#sed $'s,\x20,,' |
+#paste -sd $'\x20\n' |
+#column -t
