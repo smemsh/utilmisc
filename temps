@@ -9,6 +9,7 @@
 # new way, simpler
 # todo: combine with old way later
 #
+shopt -s globstar
 grep -H . /sys/devices/**/temp?_{input,label} \
 | sed -r 's,^/sys/devices/.*/(hwmon[[:digit:]])/(.*),\1/\2,' \
 | sort -r
