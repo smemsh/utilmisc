@@ -6,6 +6,13 @@
 # https://github.com/smemsh/utilmisc/
 # https://spdx.org/licenses/GPL-2.0
 
+# new way, simpler
+# todo: combine with old way later
+#
+grep -H . /sys/devices/**/temp?_{input,label} \
+| sed -r 's,^/sys/devices/.*/(hwmon[[:digit:]])/(.*),\1/\2,' \
+| sort -r
+
 # old way, stopped working, needs debug
 #for label in `find /sys/devices/pci* -name 'temp*_label'`
 #do grep -H . $label ${label/_label/_input}
