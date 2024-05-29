@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+while true; do
+	cat /sys/class/power_supply/BAT0/status
+	sleep 1
+done | awk '{
+	states[$0]++
+	for (state in states)
+		printf("%s: %u, ", state, states[state])
+	printf("\t\t\t\r")
+}'
