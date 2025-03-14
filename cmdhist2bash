@@ -72,20 +72,24 @@ def cmdhist2bash(infile, outfile):
 
     while True:
 
-        values = fin.readline().split(maxsplit=6)
+        values = fin.readline().split(maxsplit=8)
         if not values: break
         else: loops += 1
 
-        try: host, htime, ttytype, ttynum, shlvl, retcode, cmd = values
+        try:
+            host, start, stop, elapsed, ttytype, \
+            ttynum, shlvl, retcode, cmd \
+            = values
         except ValueError:
             err(f"wrong field count, ignoring line {loops}")
             continue
 
         fmtvar = 'HISTTIMEFORMAT'
-        timefmt = getenv(fmtvar) or bomb(f"must set ${fmtvar}")
-        timettime = int(mktime(strptime(htime, timefmt.strip())))
+        timefmt = getenv(fmtvar).strip() or bomb(f"must set ${fmtvar}")
+        begin = int(mktime(strptime(start, timefmt)))
+        end = int(mktime(strptime(stop, timefmt)))
 
-        fout.write(f"#{timettime}\n{cmd}")
+        fout.write(f"#{begin}\n{cmd}")
 
     print(f"completed after {loops} loops")
 
