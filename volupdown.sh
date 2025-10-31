@@ -13,4 +13,6 @@ quantum=3
 volcur=$(amixer get Master scontents | grep % | grep -Po '\d+%')
 voldown=0; volup=1
 volbool=$((${!invname}))
-amixer sset Master $((${volcur%\%} + quantum * (2 * volbool - 1)))%
+volnew=$((${volcur%\%} + quantum * (2 * volbool - 1)))
+volnew=$((volnew > 0 ? volnew : 0))%
+amixer sset Master $volnew
