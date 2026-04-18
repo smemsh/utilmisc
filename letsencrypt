@@ -1,0 +1,59 @@
+#/usr/bin/env bash
+#
+# letsencrypt
+#   wrapper to renew web server certs with certbot, copy challenge files
+#
+# config:
+#   sources ~/.letsencryptrc for vars:
+#     $srvhost $ssldir $root $workdir $logsdir $wellknown[]
+#
+# Scott Mcdermott <scott@smemsh.net>
+# https://github.com/smemsh/utilmisc/
+# https://spdx.org/licenses/GPL-2.0
+
+bomb () { echo ${0##*/}: ${@}, aborting >&2; exit 1; }
+
+declare -A wellknown
+source ~/.letsencryptrc || bomb "failure sourcing rcfile"
+
+botargs=(
+	--config-dir $root --work-dir $workdir --logs-dir $logsdir
+	--manual --manual-auth-hook $BASH_SOURCE
+	#--manual-cleanup-hook $BASH_SOURCE
+	--preferred-challenges=http
+	--force-renewal  # ignore expiration distance checks
+)
+keymap=(
+	# localbase remotedir ext
+	privkey   private key
+	fullchain certs   pem
+)
+
+set -ex
+
+if (($_LETSENCRYPT))
+then
+	# https://eff-certbot.readthedocs.io/en/stable/using.html#hooks
+	declare -a vars=($(compgen -A variable CERTBOT_))
+	declare -p ${vars[@]}
+	ssh $srvhost "echo $CERTBOT_VALIDATION \
+	> ${wellknown[$CERTBOT_IDENTIFIER]}/acme-challenge/$CERTBOT_TOKEN"
+else
+	export _LETSCENRYPT=1
+	domains=(${!wellknown[@]})
+	for domain in ${domains[@]}
+	do if ! certbot certonly ${botargs[@]} -d $domain
+	then bomb "bad certbot exit"; fi; done
+
+	for domain in ${domains[@]}; do
+		for ((i = 0; i < ${#keymap[@]};))
+		do scp $root/live/$domain/${keymap[i++]}.pem \
+		root@$srvhost:$ssldir/${keymap[i++]}/$domain.${keymap[i++]} \
+		|| bomb "bad scp exit"; done
+	done
+fi
+
+if ssh root@$srvhost service nginx restart
+then echo done
+else echo "nginx restart failed"
+fi
