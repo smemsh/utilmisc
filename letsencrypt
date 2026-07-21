@@ -39,7 +39,7 @@ then
 	ssh $srvhost "echo $CERTBOT_VALIDATION \
 	> ${wellknown[$CERTBOT_IDENTIFIER]}/acme-challenge/$CERTBOT_TOKEN"
 else
-	export _LETSCENRYPT=1
+	export _LETSENCRYPT=1
 	domains=(${!wellknown[@]})
 	for domain in ${domains[@]}
 	do if ! certbot certonly ${botargs[@]} -d $domain
